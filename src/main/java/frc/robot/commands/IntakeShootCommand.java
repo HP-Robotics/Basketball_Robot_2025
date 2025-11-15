@@ -4,24 +4,24 @@ import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.Constants.IntakeConstants;
 import frc.robot.subsystems.IntakeSubsystem;
 
-public class IntakeCommand extends Command {
+public class IntakeShootCommand extends Command {
     private final IntakeSubsystem m_intakeSubsystem;
 
-    public IntakeCommand(IntakeSubsystem intakeSubsystem) {
+    public IntakeShootCommand(IntakeSubsystem intakeSubsystem) {
         m_intakeSubsystem = intakeSubsystem;
     }
 
     @Override
     public void execute() {
-        m_intakeSubsystem.motor.set(IntakeConstants.kIntakeSpeed);
+        m_intakeSubsystem.motor.set(IntakeConstants.kIntakeShootSpeed);
     }
 
     @Override
     public boolean isFinished() {
         if (m_intakeSubsystem.beamBreak.beamBroken()) {
-            return true;
-        } else {
             return false;
+        } else {
+            return true;
         }
     }
 
