@@ -5,15 +5,26 @@
 package frc.robot;
 
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.Constants.ShooterConstants;
 import frc.robot.commands.Autos;
-import frc.robot.commands.ExampleCommand;
 import frc.robot.subsystems.CommandSwerveDrivetrain;
-import frc.robot.subsystems.ExampleSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
 
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.RotationsPerSecond;
+
+import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
+import com.ctre.phoenix6.swerve.SwerveModule.SteerRequestType;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
+import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
+import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 /**
@@ -22,10 +33,21 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and trigger mappings) should be declared here.
  */
+
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
-  private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
+  private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
+  private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
+  private final ShooterSubsystem m_shooter = new ShooterSubsystem();
+  CommandJoystick m_joystick =new CommandJoystick(0);
 
+
+
+  private final SwerveRequest.FieldCentric m_driveRequest = new SwerveRequest.FieldCentric()
+     .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
+     .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
+     .withSteerRequestType(SteerRequestType.MotionMagicExpo);
+  
   private final CommandSwerveDrivetrain m_commandSwerveDrivetrain = TunerConstants.createDrivetrain();
 
   // Replace with CommandPS4Controller or CommandJoystick if needed
@@ -47,17 +69,30 @@ public class RobotContainer {
    * PS4} controllers or {@link edu.wpi.first.wpilibj2.command.button.CommandJoystick Flight
    * joysticks}.
    */
-  private void configureBindings() {
-    // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
-    new Trigger(m_exampleSubsystem::exampleCondition)
-        .onTrue(new ExampleCommand(m_exampleSubsystem));
 
-    // Schedule `exampleMethodCommand` when the Xbox controller's B button is pressed,
-    // cancelling on release.
-    m_driverController.b().whileTrue(m_exampleSubsystem.exampleMethodCommand());
 
-    m_commandSwerveDrivetrain.applyRequest(SwerveRequest.PointWheelsAt());
-  }
+
+public void configureBindings() {
+   // Note that X is defined as forward according to WPILib convention,
+   // and Y is defined as to the left according to WPILib convention.
+   m_commandSwerveDrivetrain.setDefaultCommand(
+  
+      // Drivetrain will execute this command periodically
+      m_commandSwerveDrivetrain.applyRequest(() ->
+         m_driveRequest.withVelocityX(-m_driverController.getLeftY() * MaxSpeed)
+            .withVelocityY(-m_driverController.getLeftX() * MaxSpeed)
+            .withRotationalRate(-m_driverController.getRightX() * MaxAngularRate)
+      )
+   );
+  m_driverController.button(1).toggleOnTrue(new StartEndCommand(m_shooter::runShooter, m_shooter::stopShooter));//TODO
+  new Trigger (() -> m_shooter.atSpeed()).whileTrue(new StartEndCommand(() -> {m_joystick.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.5);}, () -> {m_joystick.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0);}));
+    // Idle while the robot is disabled. This ensures the configured
+   // neutral mode is applied to the drive motors while disabled.
+   final var idle = new SwerveRequest.Idle();
+   RobotModeTriggers.disabled().whileTrue(
+      m_commandSwerveDrivetrain.applyRequest(() -> idle).ignoringDisable(true)
+   );
+}
 
   /**
    * Use this to pass the autonomous command to the main {@link Robot} class.
@@ -66,6 +101,6 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     // An example command will be run in autonomous
-    return Autos.exampleAuto(m_exampleSubsystem);
+    return null;
   }
 }
