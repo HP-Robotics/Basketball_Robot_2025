@@ -39,9 +39,6 @@ public class RobotContainer {
   private double MaxSpeed = TunerConstants.kSpeedAt12Volts.in(MetersPerSecond);
   private double MaxAngularRate = RotationsPerSecond.of(0.75).in(RadiansPerSecond);
   private final ShooterSubsystem m_shooter = new ShooterSubsystem();
-  CommandJoystick m_joystick =new CommandJoystick(0);
-
-
 
   private final SwerveRequest.FieldCentric m_driveRequest = new SwerveRequest.FieldCentric()
      .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
@@ -75,17 +72,13 @@ public class RobotContainer {
 public void configureBindings() {
    // Note that X is defined as forward according to WPILib convention,
    // and Y is defined as to the left according to WPILib convention.
-   m_commandSwerveDrivetrain.setDefaultCommand(
-  
-      // Drivetrain will execute this command periodically
-      m_commandSwerveDrivetrain.applyRequest(() ->
-         m_driveRequest.withVelocityX(-m_driverController.getLeftY() * MaxSpeed)
-            .withVelocityY(-m_driverController.getLeftX() * MaxSpeed)
-            .withRotationalRate(-m_driverController.getRightX() * MaxAngularRate)
-      )
-   );
-  m_driverController.button(1).toggleOnTrue(new StartEndCommand(m_shooter::runShooter, m_shooter::stopShooter));//TODO
-  new Trigger (() -> m_shooter.atSpeed()).whileTrue(new StartEndCommand(() -> {m_joystick.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.5);}, () -> {m_joystick.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0);}));
+      m_driverController.button(OperatorConstants.kShooterButtonId)
+            .toggleOnTrue(new StartEndCommand(m_shooter::runShooter, m_shooter::stopShooter));// TODO
+      new Trigger(m_shooter::atSpeed).whileTrue(new StartEndCommand(() -> {
+         m_driverController.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0.5);
+      }, () -> {
+         m_driverController.getHID().setRumble(GenericHID.RumbleType.kBothRumble, 0);
+      }));
     // Idle while the robot is disabled. This ensures the configured
    // neutral mode is applied to the drive motors while disabled.
    final var idle = new SwerveRequest.Idle();
