@@ -40,6 +40,8 @@ public class LimelightSubsystem extends SubsystemBase {
   StructPublisher<Pose2d> m_leftPosePublisher;
   StructPublisher<Pose2d> m_rightPosePublisher;
 
+  public static Optional<VisionMeasurement> m_bestVisionMeasurement = Optional.empty();
+
   public class VisionMeasurement {
     public Pose2d m_visionPose;
     public double m_timeStamp;
@@ -61,6 +63,7 @@ public class LimelightSubsystem extends SubsystemBase {
     m_rightPosePublisher = m_rightTable.getStructTopic("Pose", Pose2d.struct).publish();
     m_leftSub = m_leftTable.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(defaultValues);
     m_rightSub = m_rightTable.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(defaultValues);
+  
 
     loadingPose = LimelightConstants.aprilTagList[1];
   }
@@ -135,8 +138,7 @@ public class LimelightSubsystem extends SubsystemBase {
 
       // timeStamp -= latency / 1000;
       Pose2d visionPose = new Pose2d(botPosX, botPosY, new Rotation2d(Math.toRadians(botRotZ)));
-      if (m_poseEstimator != null && m_poseEstimator.getPose() != null && 0 <= targetAprilTagID
-          && targetAprilTagID < LimelightConstants.aprilTagList.length) {
+      if (0 <= targetAprilTagID && targetAprilTagID < LimelightConstants.aprilTagList.length) {
         limelightTable.putValue("botPosX", NetworkTableValue.makeDouble(botPosX));
         limelightTable.putValue("botPosY", NetworkTableValue.makeDouble(botPosY));
         limelightTable.putValue("botPosZ", NetworkTableValue.makeDouble(botRotZ));
@@ -160,6 +162,7 @@ public class LimelightSubsystem extends SubsystemBase {
   public void periodic() {
     m_leftVisionData = getLimelightData(m_leftTable, m_leftSub);
     m_rightVisionData = getLimelightData(m_rightTable, m_rightSub);
+    m_bestVisionMeasurement = m_leftVisionData;
 
     if (m_leftVisionData.isPresent()) {
       VisionMeasurement p = m_leftVisionData.get();
@@ -209,26 +212,6 @@ public class LimelightSubsystem extends SubsystemBase {
       // p.m_tagDistance));
 
       m_rightPosePublisher.set(p.m_visionPose);
-    }
-
-    if (m_leftVisionData.isPresent() && m_rightVisionData.isPresent()) {
-      VisionMeasurement left = m_leftVisionData.get();
-      VisionMeasurement right = m_rightVisionData.get();
-      double leftScore = left.m_score;
-      double rightScore = right.m_score;
-
-      if (leftScore < rightScore) {
-        m_poseEstimator.updateVision(left.m_visionPose, left.m_timeStamp, left.m_tagDistance, left.m_angleDiff);
-      } else {
-        m_poseEstimator.updateVision(right.m_visionPose, right.m_timeStamp, right.m_tagDistance, right.m_angleDiff);
-      }
-      // factor 1: facing tag, factor 2: matches our robot's angle, factor 3: tag dist
-    } else if (m_leftVisionData.isPresent()) {
-      VisionMeasurement p = m_leftVisionData.get();
-      m_poseEstimator.updateVision(p.m_visionPose, p.m_timeStamp, p.m_tagDistance, p.m_angleDiff);
-    } else if (m_rightVisionData.isPresent()) {
-      VisionMeasurement p = m_rightVisionData.get();
-      m_poseEstimator.updateVision(p.m_visionPose, p.m_timeStamp, p.m_tagDistance, p.m_angleDiff);
     }
   }
 }

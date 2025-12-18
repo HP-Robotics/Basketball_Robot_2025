@@ -45,7 +45,7 @@ public class RobotContainer {
      .withDriveRequestType(DriveRequestType.OpenLoopVoltage)
      .withSteerRequestType(SteerRequestType.MotionMagicExpo);
   
-  private final CommandSwerveDrivetrain m_commandSwerveDrivetrain = TunerConstants.createDrivetrain();
+  public final CommandSwerveDrivetrain m_commandSwerveDrivetrain = TunerConstants.createDrivetrain();
 
   // Replace with CommandPS4Controller or CommandJoystick if needed
   private final CommandXboxController m_driverController =
