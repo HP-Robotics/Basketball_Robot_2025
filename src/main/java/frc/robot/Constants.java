@@ -4,6 +4,11 @@
 
 package frc.robot;
 
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
+import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.geometry.Pose2d;
+import frc.robot.subsystems.LimelightSubsystem;
+
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide
  * numerical or boolean
@@ -17,6 +22,16 @@ package frc.robot;
  * constants are needed, to reduce verbosity.
  */
 public final class Constants {
+
+  public static class LimelightConstants {
+    public static final double inToM = 0.0254;
+    public static final AprilTagFieldLayout field = AprilTagFieldLayout
+        .loadField(AprilTagFields.k2025ReefscapeWelded);
+    public static final Pose2d aprilTagList[] = LimelightSubsystem.getFieldTags(field);
+    public static final int disabledThrottle = 200;
+    public static final double imuAssist = 0.005;
+  }
+  
   public static class OperatorConstants {
     public static final int kDriverControllerPort = 0;
     public static final int kShooterButtonId = 1;
